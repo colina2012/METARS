@@ -1,0 +1,63 @@
+def traducir_metar(metar):
+    import re
+    print("[DEBUG] METAR recibido:", metar)
+    partes = metar.strip().split()
+    print("[DEBUG] Partes analizadas:", partes)
+    salida = []
+
+    for parte in partes:
+        print("[DEBUG] Procesando parte:", parte)
+
+        if re.match(r'\d{6}Z', parte):
+            print("[DEBUG] Parte identificada como fecha/hora")
+            salida.append(f"Hora de emisión: {parte[4:6]} a las {parte[:2]}:{parte[2:4]} UTC")
+
+        elif re.match(r'(\d{3}|VRB)\d{2,3}(G\d{2,3})?KT', parte):
+            print("[DEBUG] Parte identificada como viento")
+            dir_viento = parte[:3]
+            vel_viento = re.search(r'(\d{3})(\d{2,3})', parte)
+            if vel_viento:
+                salida.append(f"Viento: {vel_viento.group(1)}° a {vel_viento.group(2)} nudos")
+
+        elif re.match(r'\d{4}', parte) and parte != '0000':
+            print("[DEBUG] Parte identificada como visibilidad (en metros)")
+            salida.append(f"Visibilidad: {parte} metros")
+
+        elif re.match(r'(FEW|SCT|BKN|OVC)\d{3}', parte):
+            print("[DEBUG] Parte identificada como capa de nubes")
+            cantidad = {"FEW": "pocas nubes", "SCT": "nubes dispersas", "BKN": "muy nuboso", "OVC": "cubierto"}
+            altitud = int(parte[3:]) * 100
+            salida.append(f"Cielo: {cantidad[parte[:3]]} a {altitud} pies")
+
+        elif parte == "CAVOK":
+            print("[DEBUG] Parte identificada como CAVOK")
+            salida.append("Cielo y visibilidad OK (sin fenómenos significativos)")
+
+        elif parte.endswith("SM"):
+            print("[DEBUG] Parte identificada como visibilidad (en millas terrestres)")
+            visibilidad = parte.replace("SM", "")
+            salida.append(f"Visibilidad: {visibilidad} millas terrestres")
+
+        elif re.match(r'T\d{4}', parte):
+            print("[DEBUG] Parte identificada como temperatura/punto de rocío")
+            t = parte[1:3]
+            td = parte[3:5]
+            temp = -int(t) if parte[0] == '1' else int(t)
+            dew = -int(td) if parte[2] == '1' else int(td)
+            salida.append(f"Temperatura: {temp}°C / Punto de rocío: {dew}°C")
+
+        elif re.match(r'Q\d{4}', parte):
+            print("[DEBUG] Parte identificada como presión")
+            salida.append(f"Presión: {parte[1:]} hPa")
+
+        elif parte == "RMK":
+            print("[DEBUG] Parte identificada como inicio de comentarios adicionales")
+            salida.append("(Comentarios adicionales omitidos)")
+            break
+
+    return '\n'.join(salida)
+
+
+metar_input = input("Introduce el METAR: ")
+print("\nTraducción del METAR:\n")
+print(traducir_metar(metar_input))
